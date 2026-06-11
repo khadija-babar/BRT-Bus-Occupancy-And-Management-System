@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Login - BRT Peshawar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #16213e, #0b3618); padding: 20px; }
+        .card { width: 100%; max-width: 430px; background: white; border-radius: 24px; padding: 36px; box-shadow: 0 18px 55px rgba(0,0,0,0.28); }
+        .icon { width: 72px; height: 72px; border-radius: 20px; display: grid; place-items: center; background: #e8f5e9; color: #0b3618; font-size: 32px; margin: 0 auto 18px; }
+        h1 { color: #0b3618; text-align: center; margin-bottom: 8px; }
+        .subtitle { color: #666; text-align: center; margin-bottom: 25px; }
+        .flash { padding: 12px; border-radius: 10px; margin-bottom: 12px; background: #ffebee; color: #c62828; }
+        label { display: block; color: #0b3618; font-weight: 700; margin: 15px 0 8px; }
+        input { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #e2e8e4; font-size: 15px; }
+        input:focus { outline: none; border-color: #0b3618; }
+        button { width: 100%; margin-top: 22px; padding: 15px; border: 0; border-radius: 12px; background: #0b3618; color: white; font-weight: 800; cursor: pointer; }
+        .back { text-align: center; margin-top: 18px; }
+        .back a { color: #0b3618; text-decoration: none; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon"><i class="fas fa-id-card"></i></div>
+        <h1>Driver Login</h1>
+        <p class="subtitle">Use your driver license number and password.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('driver_login') }}">
+            <label>License Number</label>
+            <input type="text" name="license_number" placeholder="BRT-PWR-001" required>
+            <label>Password</label>
+            <input type="password" name="password" placeholder="driver123" required>
+            <button type="submit"><i class="fas fa-sign-in-alt"></i> Continue</button>
+        </form>
+        <div class="back"><a href="{{ url_for('index') }}">Back to role selection</a></div>
+    </div>
+</body>
+</html>

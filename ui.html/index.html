@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRT Peshawar Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh; background: linear-gradient(135deg, #0b3618, #16213e); color: #173322; display: grid; place-items: center; padding: 24px; }
+        .auth-shell { width: min(1100px, 100%); display: grid; grid-template-columns: 1fr 1.4fr; background: rgba(255,255,255,.96); border-radius: 28px; overflow: hidden; box-shadow: 0 24px 70px rgba(0,0,0,.28); }
+        .brand-panel { background: linear-gradient(135deg, #0b3618, #00a896); color: white; padding: 44px; display: flex; flex-direction: column; justify-content: center; }
+        .logo-circle { width: 82px; height: 82px; border-radius: 24px; display: grid; place-items: center; background: rgba(255,255,255,.18); font-size: 34px; font-weight: 900; margin-bottom: 24px; }
+        .brand-panel h1 { font-size: 36px; margin-bottom: 16px; line-height: 1.1; }
+        .brand-panel p { line-height: 1.7; opacity: .92; }
+        .role-grid { padding: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; align-content: center; }
+        .role-card { text-decoration: none; color: #173322; background: #f7fbf9; border: 1px solid #dce9e3; border-radius: 20px; padding: 24px; transition: .25s; }
+        .role-card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(0,0,0,.14); border-color: #00a896; }
+        .role-card i { color: #00a896; font-size: 36px; margin-bottom: 14px; }
+        .role-card h2 { color: #0b3618; margin-bottom: 8px; }
+        .role-card p { color: #5f7068; line-height: 1.5; }
+        @media (max-width: 800px) { .auth-shell { grid-template-columns: 1fr; } .brand-panel { padding: 30px; } }
+    </style>
+</head>
+<body class="auth-body">
+    <main class="auth-shell wide">
+        <section class="brand-panel">
+            <div class="logo-circle">ZU</div>
+            <h1>BRT Peshawar Management System</h1>
+            <p>Choose your role to access the correct dashboard. Passenger, driver, and admin features are separated and protected.</p>
+        </section>
+        <section class="role-grid">
+            <a class="role-card" href="{{ url_for('passenger_login') }}">
+                <i class="fas fa-user"></i>
+                <h2>Passenger</h2>
+                <p>Plan trips, book tickets, view balance, and see your travel history.</p>
+            </a>
+            <a class="role-card" href="{{ url_for('driver_login') }}">
+                <i class="fas fa-id-card"></i>
+                <h2>Driver</h2>
+                <p>View assigned buses, routes, schedules, and passenger capacity.</p>
+            </a>
+            <a class="role-card" href="{{ url_for('admin_login') }}">
+                <i class="fas fa-user-shield"></i>
+                <h2>Admin</h2>
+                <p>Monitor routes, schedules, complaints, buses, drivers, and system activity.</p>
+            </a>
+        </section>
+    </main>
+</body>
+</html>

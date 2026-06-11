@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - BRT Peshawar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #263238, #0b3618); }
+        .card { width: 100%; max-width: 440px; background: white; border-radius: 24px; padding: 36px; box-shadow: 0 18px 55px rgba(0,0,0,.28); }
+        h1 { color: #0b3618; text-align: center; margin-bottom: 8px; }
+        .subtitle { text-align: center; color: #607d8b; margin-bottom: 28px; }
+        .flash { padding: 12px; border-radius: 10px; margin-bottom: 12px; }
+        .flash.error { background: #ffebee; color: #c62828; }
+        .flash.success { background: #e8f5e9; color: #2e7d32; }
+        label { display: block; color: #0b3618; font-weight: 700; margin-bottom: 8px; }
+        input { width: 100%; padding: 14px; border: 2px solid #dfe7e3; border-radius: 12px; margin-bottom: 18px; font-size: 15px; }
+        input:focus { outline: none; border-color: #00a896; }
+        button { width: 100%; border: none; border-radius: 12px; padding: 15px; background: #0b3618; color: white; font-weight: 800; cursor: pointer; }
+        a { display: block; text-align: center; margin-top: 20px; color: #0b3618; font-weight: 700; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1><i class="fas fa-user-shield"></i> Admin Login</h1>
+        <p class="subtitle">Manage operations, complaints, and notifications.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+        <form method="POST">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="admin@brt.local" required>
+            <label>Password</label>
+            <input type="password" name="password" placeholder="admin123" required>
+            <button type="submit">Login as Admin</button>
+        </form>
+        <a href="{{ url_for('index') }}">Back to role selection</a>
+    </div>
+</body>
+</html>

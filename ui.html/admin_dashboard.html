@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - BRT Peshawar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef5f2; color: #24352d; }
+        .nav { background: #0b3618; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .nav h1 { font-size: 22px; }
+        .nav a { color: white; background: #d32f2f; padding: 10px 16px; border-radius: 8px; text-decoration: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 28px 18px; }
+        .hero { background: linear-gradient(135deg, #0b3618, #00a896); color: white; border-radius: 24px; padding: 32px; margin-bottom: 24px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: white; border-radius: 18px; padding: 22px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .stat { font-size: 32px; color: #0b3618; font-weight: 800; }
+        .label { color: #60736a; margin-top: 6px; }
+        h2 { color: #0b3618; margin-bottom: 14px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; }
+        th { background: #0b3618; color: white; text-align: left; padding: 12px; }
+        td { padding: 12px; border-bottom: 1px solid #edf2f0; }
+        .section { margin-bottom: 24px; }
+        .badge { padding: 5px 10px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; font-weight: 700; font-size: 12px; }
+        .empty { color: #728077; padding: 12px; }
+        .bus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+        .bus-card { border: 1px solid #dfe9e4; border-left: 5px solid #00a896; border-radius: 16px; padding: 16px; background: #f9fcfb; cursor: pointer; transition: .2s; }
+        .bus-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.12); }
+        .progress { height: 10px; border-radius: 999px; background: #dfe9e4; overflow: hidden; margin: 10px 0; }
+        .progress span { display: block; height: 100%; background: linear-gradient(90deg, #00a896, #0b3618); }
+        .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        button { border: 0; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-weight: 700; }
+        .primary { background: #0b3618; color: white; }
+        .danger { background: #d32f2f; color: white; }
+        .secondary { background: #e7f7f4; color: #00796b; }
+        .occupancy-module { display: none; border: 2px solid #00a896; }
+        .occupancy-module.show { display: block; }
+        textarea { width: 100%; min-height: 90px; padding: 12px; border: 1px solid #dfe9e4; border-radius: 12px; resize: vertical; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <h1><i class="fas fa-user-shield"></i> Admin Dashboard</h1>
+        <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <div class="container">
+        <div class="hero">
+            <h2 style="color:white;">Welcome, {{ name }}</h2>
+            <p>Manage routes, schedules, buses, drivers, passenger support, and system activity from one clean dashboard.</p>
+        </div>
+
+        <div class="grid" id="stats"></div>
+
+        <div class="section card">
+            <h2><i class="fas fa-bus"></i> Bus Management</h2>
+            <p class="empty">Click any bus card to open the Bus Occupancy module. Delete bus will remove it from service and notify passengers.</p>
+            <div id="buses" class="bus-grid">Loading buses...</div>
+        </div>
+
+        <div id="occupancyModule" class="section card occupancy-module">
+            <h2><i class="fas fa-users"></i> Bus Occupancy Module</h2>
+            <div id="occupancyDetails"></div>
+            <label style="display:block; margin-top:14px; font-weight:700;">Bus / Route Change Notification</label>
+            <textarea id="changeMessage" placeholder="Example: Bus B-001 timing or route has changed. Please check your trip before travelling."></textarea>
+            <div class="actions">
+                <button class="primary" onclick="sendChangeNotification()">Send Notification to Passengers</button>
+                <button class="secondary" onclick="closeOccupancy()">Close Module</button>
+            </div>
+        </div>
+
+        <div class="section card">
+            <h2><i class="fas fa-route"></i> Active Schedules</h2>
+            <div id="schedules">Loading...</div>
+        </div>
+
+        <div class="section card">
+            <h2><i class="fas fa-comment-dots"></i> Open Complaints</h2>
+            <div id="complaints">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedBus = null;
+
+        async function api(url, options = {}) {
+            const response = await fetch(url, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Request failed');
+            return data;
+        }
+
+        function renderTable(rows, columns, emptyText) {
+            if (!rows.length) return `<div class="empty">${emptyText}</div>`;
+            return `<table><thead><tr>${columns.map(c => `<th>${c.label}</th>`).join('')}</tr></thead><tbody>${
+                rows.map(row => `<tr>${columns.map(c => `<td>${row[c.key] ?? '-'}</td>`).join('')}</tr>`).join('')
+            }</tbody></table>`;
+        }
+
+        function renderBusCard(bus) {
+            const occupancy = Number(bus.occupancy || 0);
+            const route = bus.route_code ? `${bus.route_code} - ${bus.route_name}` : 'No active route';
+            return `
+                <div class="bus-card" onclick="openOccupancy(${bus.bus_id})">
+                    <strong>${bus.bus_number}</strong> <span class="badge">${bus.status}</span><br>
+                    <span class="empty">${route}</span>
+                    <div class="progress"><span style="width:${occupancy}%"></span></div>
+                    <strong>${occupancy}% occupied</strong>
+                    <div class="empty">${bus.current_passengers}/${bus.capacity} passengers | Platform ${bus.platform || '-'}</div>
+                    <div class="actions" onclick="event.stopPropagation()">
+                        <button class="secondary" onclick="openOccupancy(${bus.bus_id})">Bus Occupancy</button>
+                        <button class="danger" onclick="deleteBus(${bus.bus_id}, '${bus.bus_number}')">Delete Bus</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadBuses() {
+            const buses = await api('/api/admin/buses');
+            document.getElementById('buses').innerHTML = buses.length
+                ? buses.map(renderBusCard).join('')
+                : '<div class="empty">No buses available.</div>';
+        }
+
+        async function openOccupancy(busId) {
+            const data = await api(`/api/admin/buses/${busId}/occupancy`);
+            selectedBus = data.bus;
+            const stops = data.route_stops.length
+                ? data.route_stops.map(stop => `<span class="badge">${stop.stop_order}. ${stop.station_name}</span>`).join(' ')
+                : '<span class="empty">No active route stops.</span>';
+            document.getElementById('occupancyDetails').innerHTML = `
+                <div class="grid">
+                    <div class="card"><div class="stat">${data.bus.occupancy}%</div><div class="label">Occupancy</div></div>
+                    <div class="card"><div class="stat">${data.bus.current_passengers}/${data.bus.capacity}</div><div class="label">Passenger Load</div></div>
+                    <div class="card"><div class="stat">${data.active_tickets}</div><div class="label">Active Tickets</div></div>
+                </div>
+                <p style="margin:12px 0;"><strong>${data.bus.bus_number}</strong> on ${data.bus.route_name || 'no assigned route'} | Platform ${data.bus.platform || '-'}</p>
+                <p>${stops}</p>
+            `;
+            document.getElementById('changeMessage').value =
+                `${data.bus.bus_number} service or route details have changed. Please check your trip before travelling.`;
+            document.getElementById('occupancyModule').classList.add('show');
+            document.getElementById('occupancyModule').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeOccupancy() {
+            selectedBus = null;
+            document.getElementById('occupancyModule').classList.remove('show');
+        }
+
+        async function sendChangeNotification() {
+            const message = document.getElementById('changeMessage').value.trim();
+            const result = await api('/api/admin/notifications/change', {
+                method: 'POST',
+                body: JSON.stringify({ message, bus_id: selectedBus?.bus_id, route_id: selectedBus?.route_id })
+            });
+            alert(`Notification sent to ${result.sent} passenger(s).`);
+        }
+
+        async function deleteBus(busId, busNumber) {
+            if (!confirm(`Delete ${busNumber}? This removes its schedules and notifies passengers.`)) return;
+            const result = await api(`/api/admin/buses/${busId}`, { method: 'DELETE' });
+            alert(result.message);
+            closeOccupancy();
+            await Promise.all([loadDashboard(), loadBuses()]);
+        }
+
+        async function loadDashboard() {
+            const data = await api('/api/admin/overview');
+            document.getElementById('stats').innerHTML = `
+                <div class="card"><div class="stat">${data.stats.passengers}</div><div class="label">Passengers</div></div>
+                <div class="card"><div class="stat">${data.stats.drivers}</div><div class="label">Drivers</div></div>
+                <div class="card"><div class="stat">${data.stats.buses}</div><div class="label">Buses</div></div>
+                <div class="card"><div class="stat">${data.stats.routes}</div><div class="label">Routes</div></div>
+                <div class="card"><div class="stat">${data.stats.open_complaints}</div><div class="label">Open Complaints</div></div>
+            `;
+            document.getElementById('schedules').innerHTML = renderTable(data.schedules, [
+                { key: 'bus_number', label: 'Bus' },
+                { key: 'route_code', label: 'Route' },
+                { key: 'route_name', label: 'Route Name' },
+                { key: 'driver_name', label: 'Driver' },
+                { key: 'departure_time', label: 'Departure' },
+                { key: 'status', label: 'Status' }
+            ], 'No schedules found.');
+            document.getElementById('complaints').innerHTML = renderTable(data.complaints, [
+                { key: 'passenger_name', label: 'Passenger' },
+                { key: 'complaint_text', label: 'Complaint' },
+                { key: 'status', label: 'Status' },
+                { key: 'created_at', label: 'Created' }
+            ], 'No open complaints.');
+        }
+        Promise.all([loadDashboard(), loadBuses()]).catch(error => alert(error.message));
+    </script>
+</body>
+</html>

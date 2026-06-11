@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passenger Dashboard - BRT Peshawar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Segoe UI, Arial, sans-serif; background: #eef5f1; color: #173322; }
+        nav { background: #0b3618; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        nav a { color: white; text-decoration: none; background: #d32f2f; padding: 9px 14px; border-radius: 10px; }
+        main { max-width: 1180px; margin: 0 auto; padding: 28px 18px; }
+        .hero { background: linear-gradient(135deg, #0b3618, #00a896); color: white; padding: 32px; border-radius: 24px; margin-bottom: 22px; }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+        .hero-actions button { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.45); margin-top: 0; }
+        .hero-actions button:hover { background: rgba(255,255,255,.28); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+        .card { background: white; border-radius: 18px; padding: 22px; box-shadow: 0 12px 30px rgba(0,0,0,.08); }
+        h2, h3 { margin-bottom: 14px; color: #0b3618; }
+        .hero h1 { margin-bottom: 8px; }
+        label { display: block; margin: 10px 0 6px; font-weight: 700; }
+        select, input, textarea { width: 100%; padding: 12px; border: 1px solid #d9e4df; border-radius: 12px; font-size: 15px; }
+        button { border: 0; background: #0b3618; color: white; padding: 12px 16px; border-radius: 12px; cursor: pointer; font-weight: 700; margin-top: 12px; }
+        button:hover { background: #1a5c2e; }
+        .route-card, .list-item { border-left: 4px solid #00a896; background: #f8fcfa; padding: 14px; border-radius: 12px; margin-top: 10px; }
+        .muted { color: #65756c; font-size: 14px; }
+        .balance { font-size: 30px; font-weight: 800; color: #00a896; }
+        .bus-card { border: 1px solid #dce8e2; border-left: 5px solid #00a896; border-radius: 14px; padding: 14px; margin-top: 10px; background: #f8fcfa; cursor: pointer; transition: .2s; }
+        .bus-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,.1); }
+        .progress { height: 10px; background: #dce8e2; border-radius: 999px; overflow: hidden; margin: 10px 0; }
+        .progress span { display: block; height: 100%; background: linear-gradient(90deg, #00a896, #0b3618); }
+        .occupancy-detail { margin-top: 14px; padding: 14px; background: #eef9f6; border-radius: 14px; border: 1px solid #cbe7df; }
+        .badge { display: inline-block; padding: 4px 9px; border-radius: 999px; background: #e8f5e9; color: #2e7d32; font-weight: 700; font-size: 12px; margin: 3px; }
+        .filter-btn { margin-right: 8px; margin-top: 8px; }
+        .filter-btn.active { background: #0b3618; color: #fff; }
+        .occupancy-module { display: none; border: 2px solid #00a896; margin-top: 18px; }
+        .occupancy-module.show { display: block; }
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+        .stat-box { background: white; border-radius: 14px; padding: 14px; box-shadow: 0 6px 16px rgba(0,0,0,.07); }
+        .stat-box strong { display: block; color: #00a896; font-size: 24px; }
+        .secondary { background: #e7f7f4; color: #00796b; }
+        .portal-feature { border: 2px solid #00a896; }
+    </style>
+</head>
+<body>
+    <nav>
+        <strong><i class="fas fa-bus"></i> Passenger Dashboard</strong>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+    <main>
+        <section class="hero">
+            <h1>Welcome, {{ user_name }}</h1>
+            <p>Plan your trip, check bus occupancy before boarding, book tickets, recharge your card, and submit support requests.</p>
+            <div class="hero-actions">
+                <button onclick="scrollToOccupancy()"><i class="fas fa-users"></i> Check Bus Occupancy</button>
+                <button onclick="document.getElementById('startStation').scrollIntoView({behavior:'smooth'})"><i class="fas fa-route"></i> Plan Trip</button>
+            </div>
+        </section>
+
+        <section class="grid">
+            <div class="card">
+                <h2>My Card</h2>
+                <div class="balance" id="balance">PKR --</div>
+                <label>Recharge Amount</label>
+                <input id="rechargeAmount" type="number" min="1" placeholder="Enter amount">
+                <label>Payment Method</label>
+                <select id="paymentMethod">
+                    <option>EasyPaisa</option>
+                    <option>JazzCash</option>
+                    <option>card</option>
+                    <option>cash</option>
+                </select>
+                <button onclick="recharge()">Recharge Card</button>
+            </div>
+
+            <div class="card">
+                <h2>Plan Trip</h2>
+                <label>From</label>
+                <select id="startStation"></select>
+                <label>To</label>
+                <select id="endStation"></select>
+                <button onclick="findTrips()">Find Routes</button>
+                <div id="tripResults"></div>
+            </div>
+
+            <div class="card">
+                <h2>Support Complaint</h2>
+                <textarea id="complaintText" rows="5" placeholder="Write your complaint here"></textarea>
+                <button onclick="submitComplaint()">Submit Complaint</button>
+            </div>
+
+            <div class="card portal-feature" id="occupancyFeature">
+                <h2><i class="fas fa-users"></i> Bus Occupancy</h2>
+                <p class="muted">Passenger portal feature: tap any bus card to open the Bus Occupancy Module before travelling.</p>
+                <div id="busOccupancy">Loading buses...</div>
+            </div>
+        </section>
+
+        <section id="passengerOccupancyModule" class="card occupancy-module">
+            <h2><i class="fas fa-bus"></i> Bus Occupancy Module</h2>
+            <div id="busOccupancyDetail"></div>
+            <button class="secondary" onclick="closeBusOccupancy()">Close Module</button>
+        </section>
+
+        <section class="grid" style="margin-top: 18px;">
+            <div class="card">
+                <h2>Recent Tickets</h2>
+                <div id="tickets"></div>
+            </div>
+            <div class="card">
+                <h2>Notifications</h2>
+                <div id="notifications"></div>
+            </div>
+            <div class="card">
+                <h2>My Complaints</h2>
+                <div id="complaints"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        async function api(url, options = {}) {
+            const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Request failed');
+            return data;
+        }
+
+        function money(value) { return `PKR ${Number(value || 0).toFixed(0)}`; }
+        function item(html) { return `<div class="list-item">${html}</div>`; }
+        function scrollToOccupancy() {
+            document.getElementById('occupancyFeature').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        function occupancyText(value) {
+            if (value >= 75) return 'High occupancy';
+            if (value >= 45) return 'Medium occupancy';
+            return 'Seats available';
+        }
+        function analysisLabel(value) {
+            if (value === 'male') return 'Male';
+            if (value === 'female') return 'Female';
+            return 'Combined';
+        }
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        }
+        function occupancyStatsPanel(analysis) {
+            if (!analysis) return '<p class="muted">Occupancy details are not available for this bus.</p>';
+            const occ = analysis.occupancy_percentage ?? 0;
+            const note = analysis.detail_note ? `<p class="muted">${escapeHtml(analysis.detail_note)}</p>` : '';
+            const scan = analysis.seconds_analyzed != null
+                ? `<p class="muted">Scan window: ${escapeHtml(analysis.seconds_analyzed)}s</p>`
+                : '';
+            return `
+                <div class="occupancy-detail">
+                    <h3><i class="fas fa-chart-pie"></i> ${analysisLabel(analysis.analysis_mode)}</h3>
+                    <p class="muted">${escapeHtml(analysis.message || '')}</p>
+                    <div class="stats-row">
+                        <div class="stat-box"><strong>${analysis.total_passengers ?? '—'}</strong><span class="muted">Onboard (this view)</span></div>
+                        <div class="stat-box"><strong>${analysis.male_count ?? '—'}</strong><span class="muted">Male</span></div>
+                        <div class="stat-box"><strong>${analysis.female_count ?? '—'}</strong><span class="muted">Female</span></div>
+                        <div class="stat-box"><strong>${analysis.sitting_passengers ?? '—'}</strong><span class="muted">Seated</span></div>
+                        <div class="stat-box"><strong>${analysis.standing_passengers ?? '—'}</strong><span class="muted">Standing</span></div>
+                        <div class="stat-box"><strong>${occ}%</strong><span class="muted">Occupancy (this view)</span></div>
+                        <div class="stat-box"><strong>${analysis.available_seats ?? '—'}</strong><span class="muted">Available seats</span></div>
+                    </div>
+                    ${scan}
+                    ${note}
+                    <p class="muted">Source: ${escapeHtml(analysis.source || '—')}</p>
+                </div>
+            `;
+        }
+
+        async function loadPassenger() {
+            const data = await api('/api/passenger/dashboard');
+            document.getElementById('balance').textContent = money(data.passenger.card_balance);
+            document.getElementById('tickets').innerHTML = data.tickets.length
+                ? data.tickets.map(t => item(`<strong>${t.route_name || 'Route'}</strong><br>${t.start_station} to ${t.end_station}<br><span class="muted">${money(t.fixed_fare)} - ${t.ticket_status}</span>`)).join('')
+                : '<p class="muted">No tickets yet.</p>';
+            document.getElementById('notifications').innerHTML = data.notifications.length
+                ? data.notifications.map(n => item(`${n.message}<br><span class="muted">${n.created_at}</span>`)).join('')
+                : '<p class="muted">No notifications.</p>';
+            document.getElementById('complaints').innerHTML = data.complaints.length
+                ? data.complaints.map(c => item(`${c.complaint_text}<br><span class="muted">Status: ${c.status}</span>`)).join('')
+                : '<p class="muted">No complaints.</p>';
+        }
+
+        async function loadStations() {
+            const stations = await api('/api/stations');
+            const html = '<option value="">Select Station</option>' + stations.map(s => `<option>${s.station_name}</option>`).join('');
+            document.getElementById('startStation').innerHTML = html;
+            document.getElementById('endStation').innerHTML = html;
+        }
+
+        async function loadBusOccupancy() {
+            const buses = await api('/api/passenger/bus-occupancy');
+            document.getElementById('busOccupancy').innerHTML = buses.length
+                ? buses.map(bus => {
+                    const occupancy = Number(bus.occupancy || 0);
+                    return `
+                        <div class="bus-card" onclick="showBusOccupancy(${bus.bus_id})">
+                            <strong>${bus.bus_number}</strong> - ${bus.route_name || 'Route not assigned'}<br>
+                            <span class="muted">Platform ${bus.platform || '-'} | Every ${bus.headway_min || '-'}-${bus.headway_max || '-'} min</span>
+                            <div class="progress"><span style="width:${occupancy}%"></span></div>
+                            <strong>${occupancy}%</strong> <span class="muted">${occupancyText(occupancy)}</span>
+                        </div>
+                    `;
+                }).join('')
+                : '<p class="muted">No active buses available.</p>';
+        }
+
+        let occupancyModalState = { busId: null, payload: null, mode: 'combined' };
+
+        function analysisControls(activeMode) {
+            const cls = (m) => (activeMode === m ? 'secondary filter-btn active' : 'secondary filter-btn');
+            return `
+                <div class="occupancy-detail">
+                    <h3>Occupancy breakdown from video clip</h3>
+                    <p class="muted">Male and female tabs use section clips from bus_videos.py; if a bus has no mapping, only fleet totals show (no male/female split).</p>
+                    <button type="button" class="${cls('male')}" onclick="setOccupancyMode('male')">Male</button>
+                    <button type="button" class="${cls('female')}" onclick="setOccupancyMode('female')">Female</button>
+                    <button type="button" class="${cls('combined')}" onclick="setOccupancyMode('combined')">Combined</button>
+                </div>
+            `;
+        }
+
+        function setOccupancyMode(mode) {
+            if (!occupancyModalState.payload) return;
+            occupancyModalState.mode = mode;
+            renderOccupancyModal();
+        }
+
+        function renderOccupancyModal() {
+            const st = occupancyModalState;
+            if (!st.payload) return;
+            const data = st.payload;
+            const bus = data.bus;
+            const modes = data.occupancy_modes || {};
+            const analysis = modes[st.mode] || modes.combined;
+            const stops = data.route_stops.length
+                ? data.route_stops.map(stop => `<span class="badge">${stop.stop_order}. ${stop.station_name}</span>`).join(' ')
+                : '<span class="muted">Route stops are not available.</span>';
+            document.getElementById('busOccupancyDetail').innerHTML = `
+                <div class="occupancy-detail">
+                    <h3>${bus.bus_number} — route and schedule</h3>
+                    <div class="stats-row">
+                        <div class="stat-box"><strong>${bus.occupancy}%</strong><span class="muted">Fleet record occupancy</span></div>
+                        <div class="stat-box"><strong>${bus.current_passengers}/${bus.capacity}</strong><span class="muted">Passenger load</span></div>
+                        <div class="stat-box"><strong>${bus.platform || '—'}</strong><span class="muted">Platform</span></div>
+                    </div>
+                    <p><strong>${bus.route_name || 'No active route'}</strong></p>
+                    <p class="muted">${occupancyText(Number(bus.occupancy || 0))}</p>
+                    <div style="margin-top: 10px;">${stops}</div>
+                </div>
+                ${analysisControls(st.mode)}
+                ${occupancyStatsPanel(analysis)}
+            `;
+        }
+
+        async function showBusOccupancy(busId, analysisType = 'combined') {
+            if (!occupancyModalState.payload || occupancyModalState.busId !== busId) {
+                occupancyModalState.payload = await api(`/api/passenger/bus-occupancy/${busId}`);
+                occupancyModalState.busId = busId;
+            }
+            occupancyModalState.mode = analysisType || 'combined';
+            renderOccupancyModal();
+            document.getElementById('passengerOccupancyModule').classList.add('show');
+            document.getElementById('passengerOccupancyModule').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function closeBusOccupancy() {
+            document.getElementById('passengerOccupancyModule').classList.remove('show');
+            document.getElementById('busOccupancyDetail').innerHTML = '';
+            occupancyModalState = { busId: null, payload: null, mode: 'combined' };
+        }
+
+        async function findTrips() {
+            const start = document.getElementById('startStation').value;
+            const end = document.getElementById('endStation').value;
+            const trips = await api(`/api/passenger/trips?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+            document.getElementById('tripResults').innerHTML = trips.length
+                ? trips.map(t => `<div class="route-card"><strong>${t.route_name}</strong><br>Platform ${t.platform} - ${t.stop_count} stops - ${money(t.fare)}<br><span class="muted">Every ${t.headway_min}-${t.headway_max} min</span><br><button onclick='bookTicket(${JSON.stringify(t)}, "${start}", "${end}")'>Book Ticket</button> <button onclick="filterOccupancyByRoute(${t.route_id}, '${t.route_name.replace(/'/g, "\\'")}')">View Bus Occupancy</button></div>`).join('')
+                : '<p class="muted">No direct route found.</p>';
+        }
+
+        async function filterOccupancyByRoute(routeId, routeName) {
+            const buses = await api(`/api/passenger/bus-occupancy?route_id=${routeId}`);
+            document.getElementById('busOccupancy').innerHTML = buses.length
+                ? `<p class="muted">Showing buses for ${routeName}</p>` + buses.map(bus => {
+                    const occupancy = Number(bus.occupancy || 0);
+                    return `
+                        <div class="bus-card" onclick="showBusOccupancy(${bus.bus_id})">
+                            <strong>${bus.bus_number}</strong> - ${bus.route_name || 'Route not assigned'}<br>
+                            <span class="muted">Platform ${bus.platform || '-'} | Every ${bus.headway_min || '-'}-${bus.headway_max || '-'} min</span>
+                            <div class="progress"><span style="width:${occupancy}%"></span></div>
+                            <strong>${occupancy}%</strong> <span class="muted">${occupancyText(occupancy)}</span>
+                        </div>
+                    `;
+                }).join('')
+                : `<p class="muted">No active buses found for ${routeName}.</p>`;
+            scrollToOccupancy();
+        }
+
+        async function bookTicket(route, start, end) {
+            await api('/api/passenger/tickets', {
+                method: 'POST',
+                body: JSON.stringify({ route_id: route.route_id, start, end, fare: route.fare })
+            });
+            alert('Ticket booked successfully.');
+            loadPassenger();
+        }
+
+        async function recharge() {
+            await api('/api/passenger/recharge', {
+                method: 'POST',
+                body: JSON.stringify({
+                    amount: document.getElementById('rechargeAmount').value,
+                    payment_method: document.getElementById('paymentMethod').value
+                })
+            });
+            alert('Recharge successful.');
+            loadPassenger();
+        }
+
+        async function submitComplaint() {
+            await api('/api/passenger/complaints', {
+                method: 'POST',
+                body: JSON.stringify({ complaint_text: document.getElementById('complaintText').value })
+            });
+            document.getElementById('complaintText').value = '';
+            alert('Complaint submitted.');
+            loadPassenger();
+        }
+
+        Promise.all([loadStations(), loadPassenger(), loadBusOccupancy()]).catch(err => alert(err.message));
+    </script>
+</body>
+</html>
